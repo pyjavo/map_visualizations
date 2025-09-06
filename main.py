@@ -1,4 +1,5 @@
 # Standard library imports (none in your list)
+import os
 
 # Third-party imports
 #import folium
@@ -15,14 +16,16 @@ import contextily as cx
 #from google.colab import drive
 
 
-CSV_FILE_PATH = 'assets/inputs/'
+CSV_FILES_PATH = 'assets/inputs/'
 OUTPUT_DIRECTORY = 'assets/outputs/'
+
+# Ensure output directory exists
+os.makedirs(OUTPUT_DIRECTORY, exist_ok=True)
 
 filename = "my_filename"
 
 def create_pdf_file(filename):
-    file_format = '.csv'
-    df = pd.read_csv(CSV_FILE_PATH + filename + file_format)
+    df = pd.read_csv(CSV_FILES_PATH + filename)
 
     #print("Combining and converting date/time columns...")
     df['datetime'] = pd.to_datetime(df['UTC DATE'] + ' ' + df['UTC TIME'])
@@ -31,7 +34,7 @@ def create_pdf_file(filename):
 
     geometry = geopandas.points_from_xy(df.LONGITUDE, df.LATITUDE)
 
-    print("Creating the GeoDataFrame with CRS EPSG:4326...")
+    print(f"Processing the GeoDataFrame for {filename}")
     gdf = geopandas.GeoDataFrame(df, geometry=geometry, crs='EPSG:4326')
 
     gdf = gdf.to_crs(gdf.estimate_utm_crs())
@@ -48,10 +51,11 @@ def create_pdf_file(filename):
 
 
 
-    print(f"Creating the {filename}.pdf")
+    print(f"Plotting {filename}")
 
     # Create PDF file
-    output_pdf = OUTPUT_DIRECTORY+f"{filename}.pdf"
+    pdf_name = os.path.splitext(filename)[0] + ".pdf"
+    output_pdf = os.path.join(OUTPUT_DIRECTORY, pdf_name)
 
     with PdfPages(output_pdf) as pdf:
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(17,17))
@@ -76,8 +80,10 @@ def create_pdf_file(filename):
         pdf.savefig(fig, bbox_inches="tight")
         plt.close(fig)
 
-    print(f"Map saved inside {output_pdf}")
+    print(f"Map saved inside {output_pdf}", end="\n\n" )
 
 if __name__ == '__main__':
-    filename = "my_filename"
-    create_pdf_file(filename)
+    # Loop through every CSV file inside the CSV_FILES_PATH
+    for file in os.listdir(CSV_FILES_PATH):
+        if file.lower().endswith(".csv"):
+            create_pdf_file(file)
