@@ -15,61 +15,69 @@ import contextily as cx
 #from google.colab import drive
 
 
-FILE_PATH = ''
+CSV_FILE_PATH = 'assets/inputs/'
+OUTPUT_DIRECTORY = 'assets/outputs/'
+
 filename = "my_filename"
-file_format = '.csv'
-df = pd.read_csv(FILE_PATH + filename + file_format)
 
-#print("Combining and converting date/time columns...")
-df['datetime'] = pd.to_datetime(df['UTC DATE'] + ' ' + df['UTC TIME'])
+def create_pdf_file(filename):
+    file_format = '.csv'
+    df = pd.read_csv(CSV_FILE_PATH + filename + file_format)
 
-# Creating GeoPandas Dataframe
+    #print("Combining and converting date/time columns...")
+    df['datetime'] = pd.to_datetime(df['UTC DATE'] + ' ' + df['UTC TIME'])
 
-geometry = geopandas.points_from_xy(df.LONGITUDE, df.LATITUDE)
+    # Creating GeoPandas Dataframe
 
-print("Creating the GeoDataFrame with CRS EPSG:4326...")
-gdf = geopandas.GeoDataFrame(df, geometry=geometry, crs='EPSG:4326')
+    geometry = geopandas.points_from_xy(df.LONGITUDE, df.LATITUDE)
 
-gdf = gdf.to_crs(gdf.estimate_utm_crs())
+    print("Creating the GeoDataFrame with CRS EPSG:4326...")
+    gdf = geopandas.GeoDataFrame(df, geometry=geometry, crs='EPSG:4326')
 
-# Plotting the map
+    gdf = gdf.to_crs(gdf.estimate_utm_crs())
 
-custom_cmap = mcolors.ListedColormap([
-    "#00008B",  # Dark Blue
-    "#00BFFF",  # Cyan Blue
-    "#D3D3D3",  # Light Grey (could use "white" too)
-    "#FFA500",  # Orange
-    "#FF0000"   # Red
-])
+    # Plotting the map
+
+    custom_cmap = mcolors.ListedColormap([
+        "#00008B",  # Dark Blue
+        "#00BFFF",  # Cyan Blue
+        "#D3D3D3",  # Light Grey (could use "white" too)
+        "#FFA500",  # Orange
+        "#FF0000"   # Red
+    ])
 
 
 
-print(f"Creating the {filename}.pdf")
+    print(f"Creating the {filename}.pdf")
 
-# Create PDF file
-output_pdf = f"{filename}.pdf"
+    # Create PDF file
+    output_pdf = OUTPUT_DIRECTORY+f"{filename}.pdf"
 
-with PdfPages(output_pdf) as pdf:
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(17,17))
-    gdf.plot(
-        ax=ax,
-        column='SPEED',
-        scheme="natural_breaks",
-        k=5,
-        markersize=5,
-        marker="o",
-        legend=True,
-        cmap=custom_cmap,
-        legend_kwds={
-            "title": "Mean Speed (m/s)",  # legend title
-            "fontsize": 10
-        }
-    )
-    cx.add_basemap(ax, source=cx.providers.Esri.WorldImagery, crs=gdf.crs)
-    ax.set_title(f"{filename}" )
+    with PdfPages(output_pdf) as pdf:
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(17,17))
+        gdf.plot(
+            ax=ax,
+            column='SPEED',
+            scheme="natural_breaks",
+            k=5,
+            markersize=5,
+            marker="o",
+            legend=True,
+            cmap=custom_cmap,
+            legend_kwds={
+                "title": "Mean Speed (m/s)",  # legend title
+                "fontsize": 10
+            }
+        )
+        cx.add_basemap(ax, source=cx.providers.Esri.WorldImagery, crs=gdf.crs)
+        ax.set_title(f"{filename}" )
 
-    # Save current figure into the PDF
-    pdf.savefig(fig, bbox_inches="tight")
-    plt.close(fig)
+        # Save current figure into the PDF
+        pdf.savefig(fig, bbox_inches="tight")
+        plt.close(fig)
 
-print(f"Map saved inside {filename}.pdf")
+    print(f"Map saved inside {output_pdf}")
+
+if __name__ == '__main__':
+    filename = "my_filename"
+    create_pdf_file(filename)
